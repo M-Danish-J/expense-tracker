@@ -6,7 +6,12 @@ const PUBLIC_PATHS = ["/", "/auth"];
 
 /**
  * Crawler and browser well-knowns. These must never be redirected: bouncing
- * robots.txt to the sign-in page tells every crawler the site is inaccessible.
+ * robots.txt to the sign-in page tells every crawler the site is inaccessible,
+ * and redirecting the generated share images means link previews come back
+ * blank on every social platform.
+ *
+ * The icon/image entries are prefixes because Next appends a cache-busting
+ * segment to generated metadata routes.
  */
 const PUBLIC_FILES = new Set([
   "/robots.txt",
@@ -15,8 +20,18 @@ const PUBLIC_FILES = new Set([
   "/favicon.ico",
 ]);
 
+const PUBLIC_FILE_PREFIXES = [
+  "/opengraph-image",
+  "/twitter-image",
+  "/apple-icon",
+  "/icon",
+];
+
 function isPublic(pathname: string): boolean {
   if (PUBLIC_FILES.has(pathname)) return true;
+  if (PUBLIC_FILE_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return true;
+  }
   return PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
