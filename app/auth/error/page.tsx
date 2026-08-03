@@ -1,51 +1,63 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
+import Link from "next/link";
+import type { Metadata } from "next";
+import { AlertTriangle } from "lucide-react";
 
-async function ErrorContent({
-  searchParams,
-}: {
-  searchParams: Promise<{ error: string }>;
-}) {
-  const params = await searchParams;
+import { AuthHeading, AuthLayout } from "@/components/auth/auth-layout";
+import { Skeleton } from "@/components/ui/skeleton";
 
-  return (
-    <>
-      {params?.error ? (
-        <p className="text-sm text-muted-foreground">
-          Code error: {params.error}
-        </p>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          An unspecified error occurred.
-        </p>
-      )}
-    </>
-  );
-}
+export const metadata: Metadata = { title: "Something went wrong" };
+
+/** Known error codes get a human explanation; anything else stays generic. */
+const MESSAGES: Record<string, string> = {
+  "no-workspace":
+    "Your account doesn't have an active workspace. Sign in again, or contact the workspace owner if you were removed.",
+  access_denied: "That link is no longer valid. Please request a new one.",
+  otp_expired: "That link has expired. Please request a new one.",
+};
 
 export default function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ error: string }>;
+  readonly searchParams: Promise<{ error?: string }>;
 }) {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">
-                Sorry, something went wrong.
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Suspense>
-                <ErrorContent searchParams={searchParams} />
-              </Suspense>
-            </CardContent>
-          </Card>
-        </div>
+    <AuthLayout
+      slideIndex={3}
+    >
+      <div className="space-y-lg text-center">
+        <span className="mx-auto flex size-12 items-center justify-center rounded-pill bg-danger-light">
+          <AlertTriangle className="size-5 text-danger" aria-hidden />
+        </span>
+        <Suspense fallback={<Skeleton className="mx-auto h-20 w-full" />}>
+          <ErrorMessage searchParams={searchParams} />
+        </Suspense>
+        <Link
+          href="/auth/login"
+          className="inline-block text-body font-medium text-brand-900 hover:underline"
+        >
+          Back to sign in
+        </Link>
       </div>
-    </div>
+    </AuthLayout>
+  );
+}
+
+async function ErrorMessage({
+  searchParams,
+}: {
+  readonly searchParams: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
+  const code = params?.error;
+
+  return (
+    <AuthHeading
+      title="Something went wrong"
+      description={
+        (code && MESSAGES[code]) ??
+        "We couldn't complete that request. Please try again."
+      }
+    />
   );
 }

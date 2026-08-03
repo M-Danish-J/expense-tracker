@@ -1,105 +1,102 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, KeyRound, MailCheck } from "lucide-react";
+
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { useState } from "react";
+import { AuthHeading } from "@/components/auth/auth-layout";
+import { AuthError } from "@/components/auth/auth-error";
 
-export function ForgotPasswordForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [sent, setSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleForgotPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
     const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
-    try {
-      // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
-      });
-      if (error) throw error;
-      setSuccess(true);
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      email,
+      { redirectTo: `${window.location.origin}/auth/update-password` },
+    );
+
+    if (resetError) setError(resetError.message);
+    else setSent(true);
+
+    setIsLoading(false);
   };
 
+  if (sent) {
+    return (
+      <div className="space-y-lg text-center">
+        <span className="mx-auto flex size-12 items-center justify-center rounded-pill bg-success-light">
+          <MailCheck className="size-5 text-success" aria-hidden />
+        </span>
+        <AuthHeading
+          title="Check your email"
+          description={`If an account exists for ${email}, a reset link is on its way.`}
+        />
+        <Link
+          href="/auth/login"
+          className="inline-flex items-center gap-1.5 text-body font-medium text-brand-900 hover:underline"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Back to sign in
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      {success ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
-            <CardDescription>Password reset instructions sent</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              If you registered using your email and password, you will receive
-              a password reset email.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-            <CardDescription>
-              Type in your email and we&apos;ll send you a link to reset your
-              password
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleForgotPassword}>
-              <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send reset email"}
-                </Button>
-              </div>
-              <div className="mt-4 text-center text-sm">
-                Already have an account?{" "}
-                <Link
-                  href="/auth/login"
-                  className="underline underline-offset-4"
-                >
-                  Login
-                </Link>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+    <div className="space-y-xl">
+      <div className="space-y-lg text-center">
+        <span className="mx-auto flex size-12 items-center justify-center rounded-pill bg-brand-50">
+          <KeyRound className="size-5 text-brand-900" aria-hidden />
+        </span>
+        <AuthHeading
+          title="Reset password"
+          description="Enter your email address and we'll send you a link to reset your password."
+        />
+      </div>
+
+      <form onSubmit={handleForgotPassword} className="space-y-lg">
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="name@example.com"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </div>
+
+        <AuthError message={error} />
+
+        <Button type="submit" full disabled={isLoading}>
+          {isLoading ? "Sending…" : "Send reset link"}
+        </Button>
+      </form>
+
+      <p className="text-center">
+        <Link
+          href="/auth/login"
+          className="inline-flex items-center gap-1.5 text-body font-medium text-brand-900 hover:underline"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Back to sign in
+        </Link>
+      </p>
     </div>
   );
 }

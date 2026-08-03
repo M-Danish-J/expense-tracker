@@ -10,6 +10,15 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    // Build output and generated code — not ours to lint.
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "next-env.d.ts",
+      "lib/db/database.types.ts",
+    ],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 
